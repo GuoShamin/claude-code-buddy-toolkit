@@ -6,6 +6,11 @@
   "license": "MIT",
   "private": false,
   "scripts": {
+    "buddy": "bun scripts/buddy-toolkit.js",
+    "buddy:apply": "node scripts/buddy-toolkit.js apply",
+    "buddy:doctor": "node scripts/buddy-toolkit.js doctor",
+    "buddy:full": "bun scripts/buddy-toolkit.js full",
+    "buddy:search": "bun scripts/buddy-toolkit.js search",
     "search": "bun scripts/buddy-reroll.js",
     "apply": "node scripts/apply-buddy-config.js"
   },
@@ -14,4 +19,3 @@
     "node": ">=18"
   }
 }
-
