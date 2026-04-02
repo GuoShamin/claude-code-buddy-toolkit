@@ -1,0 +1,17 @@
+{
+  "name": "claude-code-buddy-toolkit",
+  "version": "0.1.0",
+  "description": "Bun-compatible Claude Code /buddy reroll toolkit with config backup, OAuth-token workflow notes, and source-linked documentation.",
+  "author": "Codex",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "search": "bun scripts/buddy-reroll.js",
+    "apply": "node scripts/apply-buddy-config.js"
+  },
+  "engines": {
+    "bun": ">=1.0.0",
+    "node": ">=18"
+  }
+}
+
