@@ -53,31 +53,24 @@ bun scripts/buddy-toolkit.js doctor --json
 
 ### 场景 A：`~/.claude.json` 里没有 `oauthAccount`
 
-这是最简单的情况，推荐直接用统一入口：
+这是最简单的情况。推荐先生成你自己的 spec，而不是直接照抄仓库里的作者示例：
 
 ```bash
-bun scripts/buddy-toolkit.js full \
-  --species chonk \
-  --rarity legendary \
-  --eye "✦" \
-  --hat crown \
-  --shiny \
-  --name "King Pudding"
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json
 ```
 
-上面这条命令默认只是 dry-run，不会改本地配置。
+然后编辑 `my-buddy.spec.json`，把占位符改成你自己的目标。
+
+上面做完后，先用 dry-run 检查：
+
+```bash
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json
+```
 
 确认输出结果没问题后，再执行：
 
 ```bash
-bun scripts/buddy-toolkit.js full \
-  --species chonk \
-  --rarity legendary \
-  --eye "✦" \
-  --hat crown \
-  --shiny \
-  --name "King Pudding" \
-  --write
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --write
 ```
 
 ### 场景 B：`~/.claude.json` 里有 `oauthAccount`
@@ -122,7 +115,7 @@ bun scripts/buddy-toolkit.js doctor
 ### 2. 搜索目标宠物
 
 ```bash
-bun scripts/buddy-toolkit.js search --species chonk --rarity legendary --eye "✦" --hat crown --shiny --count 1
+bun scripts/buddy-toolkit.js search --species duck --rarity epic --count 1
 ```
 
 ### 3. 检查某个指定 `userID`
@@ -136,20 +129,21 @@ bun scripts/buddy-toolkit.js check --check 0782ce9914700102a4b6262ae572493a7d348
 ```bash
 node scripts/buddy-toolkit.js apply \
   --uid <YOUR_UID> \
-  --name "King Pudding" \
+  --name "<YOUR_BUDDY_NAME>" \
   --personality "<YOUR_PERSONALITY>"
 ```
 
 ### 5. 结构化 spec 工作流
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json
 ```
 
 agent 实际使用时，推荐改为：
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --json
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --json
 ```
 
 ## 五、为什么要保留旧脚本
@@ -175,4 +169,5 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --json
 2. 不要把带敏感信息的 `~/.claude.json`、`~/.claude/settings.json`、token 或日志直接上传到 GitHub。
 3. 搜索结果本质上是概率搜索，条件越复杂越耗时。
 4. `--write` 会真正修改本地配置。让 agent 执行前，最好先做一次 dry-run。
-5. 这不是官方工作流，请自行评估账户和条款风险。
+5. 从这个版本开始，仓库示例文件改成了模板化占位符，目的就是避免所有使用者都复用作者的同一套宠物参数。
+6. 这不是官方工作流，请自行评估账户和条款风险。

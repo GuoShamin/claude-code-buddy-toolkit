@@ -1,0 +1,17 @@
+{
+  "search": {
+    "species": "<required: choose one species>",
+    "rarity": "<optional: common|uncommon|rare|epic|legendary>",
+    "eye": "",
+    "hat": "",
+    "shiny": false,
+    "count": 1,
+    "max": 50000000
+  },
+  "apply": {
+    "name": "<required: choose your own buddy name>",
+    "personality": "<required: write your own buddy personality>",
+    "removeOAuthAccount": false
+  },
+  "write": false
+}

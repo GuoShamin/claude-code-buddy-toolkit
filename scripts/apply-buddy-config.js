@@ -18,7 +18,7 @@ Options:
   -h, --help                 Show help
 
 Examples:
-  node scripts/apply-buddy-config.js --uid <UID> --name "King Pudding" --personality "..."
+  node scripts/apply-buddy-config.js --uid <UID> --name "My Buddy" --personality "Calm, curious, and a little dramatic."
   node scripts/apply-buddy-config.js --uid <UID> --remove-oauth-account
 `);
 }

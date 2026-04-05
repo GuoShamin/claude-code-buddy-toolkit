@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const fs = require("fs");
+
 const {
   BUDDY_CONSTANTS,
   buildFilterSummary,
@@ -26,6 +28,7 @@ Usage:
   node scripts/buddy-toolkit.js apply [options]
 
 Commands:
+  init-spec  Create a personal spec template instead of reusing the repo author's sample
   doctor    Inspect local Claude/Buddy state and highlight risks
   search    Search matching buddy results
   check     Inspect one specific userID
@@ -38,6 +41,8 @@ Common options:
   --config <path>        Override Claude config path (default: ${DEFAULT_CONFIG_PATH})
   --settings <path>      Override Claude settings path (default: ${DEFAULT_SETTINGS_PATH})
   --include-sensitive    Show full IDs in doctor/apply JSON instead of masked values
+  --output <path>        Output path for init-spec
+  --force                Overwrite init-spec output if it already exists
   -h, --help             Show help
 
 Search options:
@@ -62,10 +67,11 @@ Apply options:
   --write                    In full mode, actually write to config
 
 Examples:
+  node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json
   bun scripts/buddy-toolkit.js doctor
-  bun scripts/buddy-toolkit.js search --species chonk --rarity legendary --eye "✦" --hat crown --shiny --count 1
-  bun scripts/buddy-toolkit.js full --species chonk --rarity legendary --eye "✦" --hat crown --shiny --name "King Pudding" --personality "..." --write
-  bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --json
+  bun scripts/buddy-toolkit.js search --species duck --rarity epic --count 1
+  bun scripts/buddy-toolkit.js full --species dragon --rarity rare --name "My Buddy" --personality "Calm, curious, and a little dramatic." --write
+  bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --write --json
 `);
 }
 
@@ -125,11 +131,17 @@ function parseArgs(argv) {
       case "--spec":
         options.spec = args[++i];
         break;
+      case "--output":
+        options.output = args[++i];
+        break;
       case "--json":
         options.json = true;
         break;
       case "--include-sensitive":
         options.includeSensitive = true;
+        break;
+      case "--force":
+        options.force = true;
         break;
       case "--allow-fallback-hash":
         options.allowFallbackHash = true;
@@ -187,6 +199,41 @@ function mergeSpecOptions(cliOptions) {
   return {
     ...specOptions,
     ...definedEntries(cliOptions)
+  };
+}
+
+function isPlaceholderString(value) {
+  return typeof value === "string" && /^<.+>$/.test(value.trim());
+}
+
+function assertNoTemplatePlaceholders(options, fields) {
+  const placeholderFields = fields.filter((field) => isPlaceholderString(options[field]));
+  if (placeholderFields.length > 0) {
+    throw new Error(`Spec 里还有未替换的模板占位符：${placeholderFields.join(", ")}。请先运行 init-spec 生成你的文件并改成自己的目标值。`);
+  }
+}
+
+function buildPersonalSpecTemplate(options = {}) {
+  const search = {
+    species: options.species || "<required: choose one species>",
+    rarity: options.rarity || "<optional: common|uncommon|rare|epic|legendary>",
+    eye: options.eye || "",
+    hat: options.hat || "",
+    shiny: Boolean(options.shiny),
+    count: Number.isFinite(options.count) ? options.count : 1,
+    max: Number.isFinite(options.max) ? options.max : 50000000
+  };
+
+  const apply = {
+    name: options.name || "<required: choose your own buddy name>",
+    personality: options.personality || "<required: write your own buddy personality>",
+    removeOAuthAccount: Boolean(options.removeOAuthAccount)
+  };
+
+  return {
+    search,
+    apply,
+    write: false
   };
 }
 
@@ -342,6 +389,7 @@ function commandDoctor(options) {
 }
 
 function commandSearch(options) {
+  assertNoTemplatePlaceholders(options, ["species", "rarity", "eye", "hat"]);
   const searchOptions = {
     allowFallbackHash: options.allowFallbackHash,
     check: options.check,
@@ -396,6 +444,7 @@ function commandSearch(options) {
 }
 
 function commandApply(options) {
+  assertNoTemplatePlaceholders(options, ["uid", "name", "personality"]);
   const localState = inspectLocalState({
     configPath: options.config,
     includeSensitive: options.includeSensitive,
@@ -426,6 +475,7 @@ function commandApply(options) {
 }
 
 function commandFull(options) {
+  assertNoTemplatePlaceholders(options, ["species", "rarity", "eye", "hat", "name", "personality"]);
   const doctorSummary = inspectLocalState({
     configPath: options.config,
     includeSensitive: options.includeSensitive,
@@ -498,6 +548,36 @@ function commandFull(options) {
   printFullHuman(output);
 }
 
+function commandInitSpec(options) {
+  const outputPath = expandHome(options.output || "my-buddy.spec.json");
+  if (!options.force && fs.existsSync(outputPath)) {
+    throw new Error(`输出文件已存在：${outputPath}。如需覆盖，请追加 --force。`);
+  }
+
+  const template = buildPersonalSpecTemplate(options);
+  fs.writeFileSync(outputPath, `${JSON.stringify(template, null, 2)}\n`, "utf8");
+
+  const result = {
+    ok: true,
+    outputPath,
+    template,
+    nextSteps: [
+      "编辑这个 spec 文件，把占位符替换成你自己的物种、稀有度、名字和 personality。",
+      "先运行 `bun scripts/buddy-toolkit.js full --spec <your-spec>` 做 dry-run。",
+      "确认结果后，再追加 `--write` 真正写入本地配置。"
+    ]
+  };
+
+  if (options.json) {
+    printJson(result);
+    return;
+  }
+
+  console.log("Spec Template Created");
+  console.log(`- output: ${outputPath}`);
+  console.log("- next: 先编辑占位符，再用 full --spec 执行 dry-run");
+}
+
 function main() {
   try {
     const parsed = parseArgs(process.argv);
@@ -511,6 +591,9 @@ function main() {
     const options = mergeSpecOptions(parsed.options);
 
     switch (command) {
+      case "init-spec":
+        commandInitSpec(options);
+        break;
       case "doctor":
         commandDoctor(options);
         break;
