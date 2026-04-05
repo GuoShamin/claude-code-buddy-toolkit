@@ -7,6 +7,7 @@
 - 检查 Claude Code 本地状态
 - 精确搜索满足条件的 `/buddy` 结果
 - 在明确授权下安全更新 `~/.claude.json`
+- 避免把仓库作者的示例参数直接传播给所有用户
 - 保留来源链接、风险提醒和最小变更原则
 
 ## 首选命令
@@ -17,22 +18,24 @@
 bun scripts/buddy-toolkit.js doctor --json
 ```
 
-2. 搜索目标宠物
+2. 先生成用户自己的 spec，不要复用作者模板
 
 ```bash
-bun scripts/buddy-toolkit.js search --json --species chonk --rarity legendary --eye "✦" --hat crown --shiny --count 1
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json --json
 ```
 
-3. 全流程执行
+3. 让用户或上游 agent 把 `my-buddy.spec.json` 中的占位符替换成自己的目标值
+
+4. 全流程执行
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --json
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --json
 ```
 
-4. 真正写入时，显式加上 `--write`
+5. 真正写入时，显式加上 `--write`
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --json
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --write --json
 ```
 
 ## 结构化输入建议
@@ -45,7 +48,7 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --j
 
 示例模板见：
 
-- `examples/full-run.spec.json`
+- `examples/personal-buddy.spec.template.json`
 
 ## 安全规则
 
@@ -55,6 +58,7 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --j
 4. 只有在用户明确要求“写入本地配置”时，才对 `full` 加 `--write`。
 5. 如果配置中仍有 `oauthAccount`，统一入口会阻止 `apply/full --write`；agent 不应绕过这个保护，除非用户明确要求移除并理解风险。
 6. 运行 `search` / `full` 时优先用 Bun；Node fallback 仅用于近似预览，不适合真实 Native `/buddy` 结果。
+7. 不要把仓库中的示例人格、示例名字或作者的演示参数当成默认用户配置；优先让每个用户生成自己的 spec。
 
 ## 输出偏好
 

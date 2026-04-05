@@ -25,7 +25,7 @@ Options:
   -h, --help             Show help
 
 Examples:
-  bun scripts/buddy-reroll.js --species chonk --rarity legendary --eye "✦" --hat crown --shiny --count 1
+  bun scripts/buddy-reroll.js --species duck --rarity epic --count 1
   bun scripts/buddy-reroll.js --check 0782ce9914700102a4b6262ae572493a7d348e745cfff9ebd7a19cf7d66babe4
 `);
 }

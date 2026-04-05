@@ -26,11 +26,12 @@
 
 ## 仓库目标
 
-这个仓库优先解决三个真实问题：
+这个仓库优先解决四个真实问题：
 
 1. 很多人分不清“Claude Code 如何请求模型”和“`/buddy` 实际按谁算种子”
 2. 原始帖子里方法可行，但缺少统一入口、配置安全措施和结构化输出
 3. 实际使用者很多会直接让 agent 帮自己做，所以需要让 agent 也能稳定执行
+4. 避免仓库默认示例把所有使用者引导成和仓库作者相同的宠物配置
 
 ## 适用范围
 
@@ -42,7 +43,7 @@
 
 ## 给人类用户
 
-### 最推荐的命令
+### 最推荐的流程
 
 先检查环境：
 
@@ -50,31 +51,23 @@
 bun scripts/buddy-toolkit.js doctor
 ```
 
-只搜索，不写本地配置：
+生成你自己的 spec 模板，不要直接照抄仓库示例：
 
 ```bash
-bun scripts/buddy-toolkit.js full \
-  --species chonk \
-  --rarity legendary \
-  --eye "✦" \
-  --hat crown \
-  --shiny \
-  --name "King Pudding" \
-  --personality "A radiant little monarch who rules with soft paws, dramatic stares, and absolute confidence. He acts spoiled, but somehow always saves the day."
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json
+```
+
+编辑 `my-buddy.spec.json`，把里面的占位符替换成你自己的目标。  
+然后先做 dry-run：
+
+```bash
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json
 ```
 
 确认结果后，真正写入本地配置：
 
 ```bash
-bun scripts/buddy-toolkit.js full \
-  --species chonk \
-  --rarity legendary \
-  --eye "✦" \
-  --hat crown \
-  --shiny \
-  --name "King Pudding" \
-  --personality "A radiant little monarch who rules with soft paws, dramatic stares, and absolute confidence. He acts spoiled, but somehow always saves the day." \
-  --write
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --write
 ```
 
 写入后：
@@ -102,8 +95,8 @@ bun scripts/buddy-toolkit.js search --species duck --rarity legendary --count 3
 ```bash
 node scripts/buddy-toolkit.js apply \
   --uid <YOUR_UID> \
-  --name "King Pudding" \
-  --personality "A radiant little monarch who rules with soft paws, dramatic stares, and absolute confidence. He acts spoiled, but somehow always saves the day."
+  --name "<YOUR_BUDDY_NAME>" \
+  --personality "<YOUR_BUDDY_PERSONALITY>"
 ```
 
 ## 给 Agent
@@ -116,16 +109,24 @@ node scripts/buddy-toolkit.js apply \
 bun scripts/buddy-toolkit.js doctor --json
 ```
 
-2. 用结构化 spec 执行 dry-run：
+2. 先生成用户自己的 spec，而不是复用作者示例：
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --json
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json --json
 ```
 
-3. 仅在用户明确授权时才写入：
+3. 让用户或上游 agent 把 `my-buddy.spec.json` 中的占位符替换成自己的目标值
+
+4. 用结构化 spec 执行 dry-run：
 
 ```bash
-bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --json
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --json
+```
+
+5. 仅在用户明确授权时才写入：
+
+```bash
+bun scripts/buddy-toolkit.js full --spec my-buddy.spec.json --write --json
 ```
 
 ### 为什么 agent 应优先用 `--spec`
@@ -137,7 +138,7 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --j
 
 模板文件见：
 
-- [examples/full-run.spec.json](examples/full-run.spec.json)
+- [examples/personal-buddy.spec.template.json](examples/personal-buddy.spec.template.json)
 - [AGENTS.md](AGENTS.md)
 
 ## 核心文件
@@ -169,7 +170,7 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --j
 │   ├── source-links.md
 │   └── workflows.md
 ├── examples
-│   └── full-run.spec.json
+│   └── personal-buddy.spec.template.json
 └── scripts
     ├── apply-buddy-config.js
     ├── buddy-reroll.js
@@ -187,15 +188,17 @@ bun scripts/buddy-toolkit.js full --spec examples/full-run.spec.json --write --j
 4. 统一入口 `scripts/buddy-toolkit.js` 在 `apply/full --write` 场景下，默认会拦住“带 `oauthAccount` 但未显式移除”的写入，避免你误以为已经成功切换宠物种子。
 5. 你可以同时使用自定义 `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` 请求模型，但这不等于 `/buddy` 一定按 API key 模式取种子。两者是不同层。
 6. 不要把自己的 token、邮箱、完整 `~/.claude.json`、或敏感日志上传到 GitHub。
-7. 条件越苛刻，搜索时间越久。像 `legendary + shiny + 指定物种 + 指定眼睛 + 指定帽子` 这种组合本身就是低概率事件。
-8. 本仓库仅用于学习、验证和个人研究；请自行评估其与官方产品条款、版本变动和账户风险的关系。
+7. 仓库内的模板文件是“必须先个性化再运行”的模板，不是推荐直接执行的成品配置。
+8. 条件越苛刻，搜索时间越久。像 `legendary + shiny + 指定物种 + 指定眼睛 + 指定帽子` 这种组合本身就是低概率事件。
+9. 本仓库仅用于学习、验证和个人研究；请自行评估其与官方产品条款、版本变动和账户风险的关系。
 
-## 常用 npm Scripts
+## 常用命令
 
 ```bash
 npm run buddy:doctor
+node scripts/buddy-toolkit.js init-spec --output my-buddy.spec.json
 npm run buddy:search -- --species chonk --rarity legendary
-npm run buddy:full -- --spec examples/full-run.spec.json
+npm run buddy:full -- --spec my-buddy.spec.json
 npm run buddy:apply -- --uid <YOUR_UID> --dry-run
 ```
 
